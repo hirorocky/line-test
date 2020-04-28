@@ -19,4 +19,47 @@ class LineEventsController < ApplicationController
       p 'UserID: ' + user_id # user_idを確認
     end
   end
-end
+
+  def callback
+    # Postモデルの中身をランダムで@postに格納する
+    @post=Post.offset( rand(Post.count) ).first
+    body = request.body.read
+
+    signature = request.env['HTTP_X_LINE_SIGNATURE']
+    unless client.validate_signature(body, signature)
+      head :bad_request
+    end
+
+    events = client.parse_events_from(body)
+
+    events.each { |event|
+
+      # event.message['text']でLINEで送られてきた文書を取得
+      if event.message['text'].include?("好き")
+        response = "んほぉぉぉぉぉぉ！すきすきすきすきすきすきすきすきぃぃぃぃぃ"
+      elsif event.message["text"].include?("行ってきます")
+        response = "どこいくの？どこいくの？どこいくの？寂しい寂しい寂しい。。。"
+      elsif event.message['text'].include?("おはよう")
+        response = "おはよう。なんで今まで連絡くれなかったの？"
+      elsif event.message['text'].include?("みーくん")
+        response = "みーくん！？" * 50
+      else
+        response = @post.name
+      end
+      #if文でresponseに送るメッセージを格納
+
+      case event
+      when Line::Bot::Event::Message
+        case event.type
+        when Line::Bot::Event::MessageType::Text
+          message = {
+            type: 'text',
+            text: response
+          }
+          client.reply_message(event['replyToken'], message)
+        end
+      end
+    }
+
+    head :ok
+  end
