@@ -83,3 +83,4 @@ production:
   database: line-test_production
   username: line-test
   password: <%= ENV['LINE-TEST_DATABASE_PASSWORD'] %>
+  url: <%= ENV['DATABASE_URL'] %>
