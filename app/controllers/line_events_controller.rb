@@ -32,7 +32,7 @@ class LineEventsController < ApplicationController
 
     events = client.parse_events_from(body)
 
-    events.each { |event|
+    events.each do |event|
 
       # event.message['text']でLINEで送られてきた文書を取得
       if event.message['text'].include?("好き")
@@ -59,7 +59,8 @@ class LineEventsController < ApplicationController
           client.reply_message(event['replyToken'], message)
         end
       end
-    }
+    end
 
     head :ok
   end
+end
