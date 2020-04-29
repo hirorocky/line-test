@@ -23,7 +23,7 @@ class LineEventsController < ApplicationController
     events.each do |event|
       case event
       when Line::Bot::Event::Follow
-        line_user_id = event.source['userId']
+        line_user_id = event['source']['userId']
         user = User.find_by(line_user_id: line_user_id)
         if user.nil?
           User.create!(line_user_id: line_user_id, status: 0)
