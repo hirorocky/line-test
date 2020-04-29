@@ -1,28 +1,16 @@
 class LineEventsController < ApplicationController
   require 'line/bot'
 
-  # callbackアクションのCSRFトークン認証を無効
-  protect_from_forgery :except => [:receive, :callback]
+  protect_from_forgery :except => [:callback]
 
   def client
-    @client ||= Line::Bot::Client.new { |config|
-      config.channel_secret = ENV["LINE_CHANNEL_SECRET"]
-      config.channel_token = ENV["LINE_CHANNEL_TOKEN"]
-    }
-  end
-
-  def receive
-    body = request.body.read
-    events = client.parse_events_from(body)
-    events.each do |event|
-      user_id = event['source']['userId']  #user_id取得
-      p 'UserID: ' + user_id # user_idを確認
+    @client ||= Line::Bot::Client.new do |config|
+      config.channel_secret = ENV['LINE_CHANNEL_SECRET']
+      config.channel_token = ENV['LINE_CHANNEL_TOKEN']
     end
   end
 
   def callback
-    # Postモデルの中身をランダムで@postに格納する
-    @post=Post.offset( rand(Post.count) ).first
     body = request.body.read
 
     signature = request.env['HTTP_X_LINE_SIGNATURE']
@@ -33,34 +21,46 @@ class LineEventsController < ApplicationController
     events = client.parse_events_from(body)
 
     events.each do |event|
-
-      # event.message['text']でLINEで送られてきた文書を取得
-      if event.message['text'].include?("好き")
-        response = "んほぉぉぉぉぉぉ！すきすきすきすきすきすきすきすきぃぃぃぃぃ"
-      elsif event.message["text"].include?("行ってきます")
-        response = "どこいくの？どこいくの？どこいくの？寂しい寂しい寂しい。。。"
-      elsif event.message['text'].include?("おはよう")
-        response = "おはよう。なんで今まで連絡くれなかったの？"
-      elsif event.message['text'].include?("みーくん")
-        response = "みーくん！？" * 50
-      else
-        response = @post.name
-      end
-      #if文でresponseに送るメッセージを格納
-
       case event
       when Line::Bot::Event::Message
         case event.type
         when Line::Bot::Event::MessageType::Text
-          message = {
-            type: 'text',
-            text: response
-          }
-          client.reply_message(event['replyToken'], message)
+          # LINEから送られてきたメッセージが「アンケート」と一致するかチェック
+          if event.message['text'].eql?('アンケート')
+            # private内のtemplateメソッドを呼び出します。
+            client.reply_message(event['replyToken'], template)
+          end
         end
       end
     end
 
     head :ok
+  end
+
+  private
+
+  def template
+    {
+      "type": "template",
+      "altText": "this is a confirm template",
+      "template": {
+          "type": "confirm",
+          "text": "今日のもくもく会は楽しいですか？",
+          "actions": [
+              {
+                "type": "message",
+                # Botから送られてきたメッセージに表示される文字列です。
+                "label": "楽しい",
+                # ボタンを押した時にBotに送られる文字列です。
+                "text": "楽しい"
+              },
+              {
+                "type": "message",
+                "label": "楽しくない",
+                "text": "楽しくない"
+              }
+          ]
+      }
+    }
   end
 end
