@@ -6,8 +6,31 @@ class UsersController < ApplicationController
   def update
     user = User.find(params[:id])
     message = {
-      type: 'text',
-      text: 'しつもんテスト'
+      "type": "template",
+      "altText": "定期アンケート",
+      "template": {
+        "type": "buttons",
+        "imageAspectRatio": "rectangle",
+        "title": "今の体調を天気で表すと？",
+        "text": "選択してください：",
+        "actions": [
+            {
+              "type": "postback",
+              "label": "☀️",
+              "data": "sunny"
+            },
+            {
+              "type": "postback",
+              "label": "☁️",
+              "data": "cloudy"
+            },
+            {
+              "type": "postback",
+              "label": "🌧",
+              "data": "rainy"
+            }
+        ]
+      }
     }
     client = Line::Bot::Client.new { |config|
       config.channel_secret = ENV["LINE_CHANNEL_SECRET"]
