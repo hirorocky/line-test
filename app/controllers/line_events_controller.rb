@@ -22,6 +22,15 @@ class LineEventsController < ApplicationController
 
     events.each do |event|
       case event
+      when Line::Bot::Event::Follow
+        line_user_id = event.source['userId']
+        user = User.find_by(line_user_id: line_user_id)
+        if user.nil?
+          User.create!(line_user_id: line_user_id, status: 0)
+          client.reply_message(event['replyToken'], want_company_code)
+        elsif user.status == 0
+          client.reply_message(event['replyToken'], want_company_code)
+        end
       when Line::Bot::Event::Message
         case event.type
         when Line::Bot::Event::MessageType::Text
@@ -38,6 +47,12 @@ class LineEventsController < ApplicationController
   end
 
   private
+  def want_company_code
+    {
+      'type': 'text',
+      'text': '会社コードを入力してください。'
+    }
+  end
 
   def template
     {
